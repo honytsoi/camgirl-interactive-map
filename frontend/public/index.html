@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camgirl Interactive Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100%; } /* Full viewport map */
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <!-- Placeholder for our map initialization script -->
+    <script>
+        // --- Map Initialization ---
+        const map = L.map('map').setView([20, 0], 2); // Center roughly, zoom level 2
+
+        // Add a base tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        console.log("Leaflet map initialized.");
+
+        // --- Data Fetching ---
+        const apiUrl = '/api/girls'; // Relative path to our worker endpoint
+
+        async function fetchGirlData() {
+            console.log(`Fetching data from ${apiUrl}...`);
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+                }
+                const data = await response.json();
+                console.log("Successfully fetched girl data:", data);
+                // Data rendering will happen in Task D3
+                return data;
+            } catch (error) {
+                console.error("Error fetching girl data:", error);
+                alert(`Failed to load map data: ${error.message}`); // Simple error feedback
+                return null; // Indicate failure
+            }
+        }
+
+        // --- GeoJSON Fetching ---
+        const geoJsonUrl = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
+        let geoJsonLayer = null; // To hold the map layer
+
+        async function fetchGeoJson() {
+            console.log(`Fetching GeoJSON from ${geoJsonUrl}...`);
+            try {
+                const response = await fetch(geoJsonUrl);
+                if (!response.ok) {
+                    throw new Error(`GeoJSON request failed with status ${response.status}`);
+                }
+                const data = await response.json();
+                console.log("Successfully fetched GeoJSON data.");
+                return data;
+            } catch (error) {
+                console.error("Error fetching GeoJSON data:", error);
+                alert(`Failed to load map shape data: ${error.message}`);
+                return null;
+            }
+        }
+
+        // --- Color Scale Function ---
+        // Simple scale: more models -> darker color (adjust as needed)
+        function getColor(count) {
+            // Example: using shades of red/orange
+            return count > 1000 ? '#800026' :
+                   count > 500  ? '#BD0026' :
+                   count > 200  ? '#E31A1C' :
+                   count > 100  ? '#FC4E2A' :
+                   count > 50   ? '#FD8D3C' :
+                   count > 20   ? '#FEB24C' :
+                   count > 10   ? '#FED976' :
+                                  '#FFEDA0'; // Lightest color for 1-10
+        }
+
+        // --- Styling Function for GeoJSON Layer ---
+        function styleFeature(feature, girlCounts) {
+            const countryCode = feature.properties.ISO_A2; // Assuming ISO_A2 exists in GeoJSON
+            const count = girlCounts ? (girlCounts[countryCode] || 0) : 0;
+
+            return {
+                fillColor: count > 0 ? getColor(count) : '#FFFFFF', // White if no data or 0
+                weight: 1, // Border weight
+                opacity: 1,
+                color: '#CCCCCC', // Border color (light grey)
+                fillOpacity: 0.7
+            };
+        }
+
+
+        // --- Main Execution: Fetch both datasets and render ---
+        async function initializeMapData() {
+            console.log("Attempting to fetch API data and GeoJSON data...");
+            try {
+                const [girlData, geoJsonData] = await Promise.all([
+                    fetchGirlData(),
+                    fetchGeoJson()
+                ]);
+
+                if (!girlData || !geoJsonData) {
+                    console.error("Failed to load necessary data. Map rendering aborted.");
+                    alert("Could not load all data needed for the map.");
+                    return;
+                }
+
+                console.log("Both datasets loaded. Creating GeoJSON layer...");
+
+                // Create the GeoJSON layer with styling based on counts
+                geoJsonLayer = L.geoJSON(geoJsonData, {
+                    style: (feature) => styleFeature(feature, girlData),
+                    onEachFeature: (feature, layer) => {
+                        // --- Hover Effects ---
+                        layer.on({
+                            mouseover: (e) => {
+                                const layer = e.target;
+                                // Highlight feature
+                                layer.setStyle({
+                                    weight: 3,
+                                    color: '#666', // Darker border on hover
+                                    dashArray: '',
+                                    fillOpacity: 0.8
+                                });
+                                layer.bringToFront();
+
+                                // --- Tooltip ---
+                                const countryCode = feature.properties.ISO_A2;
+                                const countryName = feature.properties.ADMIN || feature.properties.NAME || countryCode; // Use name if available
+                                const count = girlData[countryCode] || 0;
+                                const tooltipContent = `<b>${countryName}</b><br>${count} model(s)`;
+                                layer.bindTooltip(tooltipContent).openTooltip();
+                            },
+                            mouseout: (e) => {
+                                // Reset style using the original style function
+                                geoJsonLayer.resetStyle(e.target);
+                                // Close tooltip if needed (usually happens automatically)
+                                // e.target.closeTooltip();
+                            },
+                            // Optional: click listener
+                            // click: (e) => {
+                            //     map.fitBounds(e.target.getBounds()); // Example: zoom to country on click
+                            // }
+                        });
+                    }
+                }).addTo(map);
+
+                console.log("GeoJSON layer added to map.");
+
+            } catch (error) {
+                console.error("Error during map data initialization:", error);
+                alert("An unexpected error occurred while initializing the map data.");
+            }
+        }
+
+        // Initialize map data when the page loads
+        initializeMapData();
+    </script>
+</body>
+</html>
