@@ -35,6 +35,28 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        footer {
+            position: absolute;
+            bottom: 0;
+            /* width: 100%; */
+            padding: 10px;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1001;
+        }
+        footer a {
+            text-decoration: none;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            font-size: small;
+        }
+        footer svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -48,7 +70,7 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
 
-    <!-- Placeholder for our map initialization script -->
+    <!-- Map initialization script -->
     <script>
         // --- Map Initialization ---
         const map = L.map('map').setView([20, 0], 2); // Center roughly, zoom level 2
@@ -208,5 +230,14 @@
             }
         });
     </script>
+    <footer>
+        <a href="https://github.com/honytsoi/camgirl-interactive-map" target="_blank">
+            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>GitHub icon</title>
+                <path d="M12 .297a12 12 0 00-3.79 23.41c.6.113.82-.263.82-.583 0-.288-.01-1.048-.015-2.055-3.338.725-4.042-1.61-4.042-1.61-.546-1.384-1.333-1.752-1.333-1.752-1.09-.745.084-.73.084-.73 1.205.085 1.84 1.236 1.84 1.236 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.76-1.605-2.665-.303-5.467-1.334-5.467-5.93 0-1.31.47-2.38 1.235-3.22-.125-.303-.535-1.524.115-3.176 0 0 1.005-.322 3.3 1.23a11.5 11.5 0 013.0-.404c1.02.005 2.045.138 3.0.404 2.295-1.552 3.3-1.23 3.3-1.23.65 1.652.24 2.873.12 3.176.77.84 1.235 1.91 1.235 3.22 0 4.61-2.807 5.625-5.48 5.92.43.372.815 1.102.815 2.222 0 1.604-.015 2.896-.015 3.286 0 .322.215.7.825.58A12.005 12.005 0 0012 .297"/>
+            </svg>
+            View Source on GitHub
+        </a>
+    </footer>
 </body>
 </html>
