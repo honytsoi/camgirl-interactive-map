@@ -64,7 +64,7 @@ These steps are broken down into granular tasks that should be easy for a junior
     *   [x] D3. Render the map with country shading based on camgirl counts.
     *   [x] D4. Implement basic interactivity (zoom, pan, hover).
 *   **E. Initial Deployment**
-    *   E1. Deploy the Cloudflare Worker and frontend using `npm run deploy`.
+    *   [x] E1. Deploy the Cloudflare Worker and frontend using `npm run deploy`.
     *   E2. Test the website and API endpoint thoroughly.
 
 ## 5. Considerations

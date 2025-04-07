@@ -34,17 +34,40 @@ export default {
 
 		// Handle API requests
 		if (url.pathname === '/api/girls' && request.method === 'GET') {
+			// --- Cache Implementation ---
+			const cache = caches.default; // Get the default cache storage
+			let response = await cache.match(request); // Check cache for the request
+
+			if (response) {
+				console.log('Cache HIT for /api/girls');
+				// Ensure CORS headers are added to the cached response before returning
+				return addCorsHeaders(new Response(response.body, response));
+			}
+
+			console.log('Cache MISS for /api/girls. Fetching fresh data...');
+			// --- End Cache Check ---
+
 			try {
-				console.log('API request received for /api/girls');
 				const aggregatedData = await aggregator.getAggregatedData(env);
 				const jsonResponse = JSON.stringify(aggregatedData, null, 2); // Pretty print JSON
 
-				return addCorsHeaders(
-					new Response(jsonResponse, {
-						headers: { 'Content-Type': 'application/json' },
-						status: 200,
-					})
-				);
+				// Create the response
+				response = new Response(jsonResponse, {
+					headers: { 'Content-Type': 'application/json' },
+					status: 200,
+				});
+
+				// Set Cache-Control header for 60 seconds
+				response.headers.set('Cache-Control', 'public, max-age=60');
+
+				// Add CORS headers *before* putting into cache
+				addCorsHeaders(response);
+
+				// Cache the response asynchronously
+				// Use response.clone() because Response body can only be read once
+				ctx.waitUntil(cache.put(request, response.clone()));
+
+				return response; // Return the original response
 			} catch (error: any) {
 				console.error('Error in /api/girls endpoint:', error);
 				const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
