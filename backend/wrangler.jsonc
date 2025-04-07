@@ -6,6 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "camgirl-interactive-map",
 	"main": "src/index.ts",
+	"route": "camgirl-interactive-map.adult-webcam-faq.com/*",
 	"compatibility_date": "2025-04-07",
 	"compatibility_flags": [
 		"nodejs_compat"
