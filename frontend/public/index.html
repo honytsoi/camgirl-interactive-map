@@ -107,7 +107,7 @@
         }
 
         // --- GeoJSON Fetching ---
-        const geoJsonUrl = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
+        const geoJsonUrl = '/data/countries.geojson';  // Relative to your public directory
         let geoJsonLayer = null; // To hold the map layer
 
         async function fetchGeoJson() {
@@ -118,7 +118,13 @@
                     throw new Error(`GeoJSON request failed with status ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("Successfully fetched GeoJSON data.");
+                
+                // Debug: Look at the complete first feature
+                if (data.features && data.features.length > 0) {
+                    console.log("First GeoJSON feature complete data:", data.features[0]);
+                    console.log("Available properties:", Object.keys(data.features[0].properties));
+                }
+                
                 return data;
             } catch (error) {
                 console.error("Error fetching GeoJSON data:", error);
@@ -143,14 +149,22 @@
 
         // --- Styling Function for GeoJSON Layer ---
         function styleFeature(feature, girlCounts) {
-            const countryCode = feature.properties.ISO_A2; // Assuming ISO_A2 exists in GeoJSON
-            const count = girlCounts ? (girlCounts[countryCode] || 0) : 0;
+            // Get the ISO code from the correct property
+            const countryCode = feature.properties?.['ISO3166-1-Alpha-2'];
+            const countryName = feature.properties?.name;
+
+            // Debug logging for development
+            if (Math.random() < 0.1) {
+                console.log(`Country Debug - Name: ${countryName}, Code: ${countryCode}, Count: ${girlCounts?.[countryCode] || 0}`);
+            }
+
+            const count = girlCounts?.[countryCode] || 0;
 
             return {
-                fillColor: count > 0 ? getColor(count) : '#FFFFFF', // White if no data or 0
-                weight: 1, // Border weight
+                fillColor: count > 0 ? getColor(count) : '#FFFFFF',
+                weight: 1,
                 opacity: 1,
-                color: '#CCCCCC', // Border color (light grey)
+                color: '#CCCCCC',
                 fillOpacity: 0.7
             };
         }
@@ -181,18 +195,17 @@
                         layer.on({
                             mouseover: (e) => {
                                 const layer = e.target;
-                                // Highlight feature
                                 layer.setStyle({
                                     weight: 3,
-                                    color: '#666', // Darker border on hover
+                                    color: '#666',
                                     dashArray: '',
                                     fillOpacity: 0.8
                                 });
                                 layer.bringToFront();
 
-                                // --- Tooltip ---
-                                const countryCode = feature.properties.ISO_A2;
-                                const countryName = feature.properties.ADMIN || feature.properties.NAME || countryCode; // Use name if available
+                                // Update tooltip to use correct property names
+                                const countryCode = feature.properties['ISO3166-1-Alpha-2'];
+                                const countryName = feature.properties.name;
                                 const count = girlData[countryCode] || 0;
                                 const tooltipContent = `<b>${countryName}</b><br>${count} model(s)`;
                                 layer.bindTooltip(tooltipContent).openTooltip();
